@@ -1110,7 +1110,7 @@ func (app *App) startupProcess() *App {
 	app.mountStartupProcess()
 
 	// build route tree stack
-	app.buildTree()
+	app.BuildTree()
 
 	return app
 }

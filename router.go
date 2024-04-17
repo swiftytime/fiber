@@ -479,8 +479,8 @@ func (app *App) addRoute(method string, route *Route, isMounted ...bool) {
 	}
 }
 
-// buildTree build the prefix tree from the previously registered routes
-func (app *App) buildTree() *App {
+// BuildTree build the prefix tree from the previously registered routes
+func (app *App) BuildTree() *App {
 	if !app.routesRefreshed {
 		return app
 	}

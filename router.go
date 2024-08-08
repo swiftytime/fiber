@@ -444,6 +444,9 @@ func (app *App) registerStatic(prefix, root string, config ...Static) {
 }
 
 func (app *App) addRoute(method string, route *Route, isMounted ...bool) {
+	app.mutex.Lock()
+	defer app.mutex.Unlock()
+
 	// Check mounted routes
 	var mounted bool
 	if len(isMounted) > 0 {
@@ -469,16 +472,17 @@ func (app *App) addRoute(method string, route *Route, isMounted ...bool) {
 
 	// Execute onRoute hooks & change latestRoute if not adding mounted route
 	if !mounted {
-		app.mutex.Lock()
 		app.latestRoute = route
 		if err := app.hooks.executeOnRouteHooks(*route); err != nil {
 			panic(err)
 		}
-		app.mutex.Unlock()
 	}
 }
 
 func (app *App) RemoveRoute(path string, methods ...string) {
+	app.mutex.Lock()
+	defer app.mutex.Unlock()
+
 	for _, method := range methods {
 		m := app.methodInt(method)
 
@@ -493,14 +497,30 @@ func (app *App) RemoveRoute(path string, methods ...string) {
 					newRoutes = append(newRoutes, r)
 				}
 			}
+
 			app.stack[m] = newRoutes
 			app.routesRefreshed = true
 		}
 	}
 }
 
+// RebuildTree rebuilds the prefix tree from the previously registered routes.
+// This method is useful when you want to register routes dynamically after the app has started.
+// It is not recommended to use this method on production environments because rebuilding
+// the tree is performance-intensive and not thread-safe in runtime. Since building the tree
+// is only done in the startupProcess of the app, this method does not makes sure that the
+// routeTree is being safely changed, as it would add a great deal of overhead in the request.
+// Latest benchmark results showed a degradation from 82.79 ns/op to 94.48 ns/op and can be found in:
+// https://github.com/gofiber/fiber/issues/2769#issuecomment-2227385283
+func (app *App) RebuildTree() *App {
+	app.mutex.Lock()
+	defer app.mutex.Unlock()
+
+	return app.buildTree()
+}
+
 // BuildTree build the prefix tree from the previously registered routes
-func (app *App) BuildTree() *App {
+func (app *App) buildTree() *App {
 	if !app.routesRefreshed {
 		return app
 	}

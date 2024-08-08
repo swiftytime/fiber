@@ -25,7 +25,6 @@ import (
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/fiber/v2/utils"
-
 	"github.com/valyala/fasthttp"
 )
 
@@ -1107,7 +1106,7 @@ func (app *App) startupProcess() *App {
 	app.mountStartupProcess()
 
 	// build route tree stack
-	app.BuildTree()
+	app.buildTree()
 
 	return app
 }

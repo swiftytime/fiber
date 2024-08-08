@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2/utils"
-
 	"github.com/valyala/fasthttp"
 )
 
@@ -476,6 +475,27 @@ func (app *App) addRoute(method string, route *Route, isMounted ...bool) {
 			panic(err)
 		}
 		app.mutex.Unlock()
+	}
+}
+
+func (app *App) RemoveRoute(path string, methods ...string) {
+	for _, method := range methods {
+		m := app.methodInt(method)
+
+		l := len(app.stack[m])
+		if l > 0 {
+			newRoutes := make([]*Route, 0, cap(app.stack[m]))
+			for _, r := range app.stack[m] {
+				if r.path == path {
+					atomic.AddUint32(&app.routesCount, ^uint32(0))
+					atomic.AddUint32(&app.handlersCount, ^uint32(len(r.Handlers)-1))
+				} else {
+					newRoutes = append(newRoutes, r)
+				}
+			}
+			app.stack[m] = newRoutes
+			app.routesRefreshed = true
+		}
 	}
 }
 
